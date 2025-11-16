@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>粒子AI生图 V2 - 测试页面 [无CDN]</title>
+<!-- Version: 2.0.1 - 修复JS错误和添加占位事件 -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- 引入 Material Symbols 图标库 -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<!-- V2独立样式文件 -->
+<link href="/v2/css/main.css?t=1763105693" rel="stylesheet"/>
+<style>
+    /* 防止FOUC - 页面加载时隐藏内容 */
+    body:not(.loaded) {
+        opacity: 0;
+    }
+    body.loaded {
+        opacity: 1;
+        transition: opacity 0.2s ease-in;
+    }
+</style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3b82f6", // blue-500
+                        "background-light": "#ffffff", // white
+                        "background-dark": "#18181b", // zinc-900
+                        "sidebar-yellow": "#FFD900",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.75rem", // rounded-xl
+                        'full': '9999px',
+                    },
+                },
+            },
+        };
+    </script>
+</head>
+<body class="bg-background-light dark:bg-zinc-800 font-display text-gray-800 dark:text-gray-200">
+<div class="v2-app flex h-screen w-full bg-white dark:bg-zinc-900">
+
+<!-- 1. 左侧侧边栏 -->
+<aside id="sidebar" class="w-[340px] p-6 bg-sidebar-yellow dark:bg-sidebar-yellow text-black flex flex-col gap-6 shrink-0 relative transition-all duration-300">
+    
+    <!-- 展开时的 Logo 和标题 -->
+    <div class="flex items-center justify-between v2-sidebar-full-content">
+        <div class="flex items-center gap-3">
+            <div class="flex flex-col">
+                <div class="flex items-center space-x-1">
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                </div>
+                <div class="flex items-center space-x-1 mt-1">
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                </div>
+            </div>
+            <h1 class="font-bold text-lg tracking-wider v2-sidebar-text">基本粒子</h1>
+        </div>
+    </div>
+    
+    <!-- 折叠时的 Logo 图标 -->
+    <div class="v2-sidebar-icon-content h-10">
+        <div class="flex flex-col">
+            <div class="flex items-center space-x-1">
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+            </div>
+            <div class="flex items-center space-x-1 mt-1">
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 上传区域 -->
+    <div class="space-y-4">
+        <div class="flex justify-between items-center v2-sidebar-full-content">
+            <span class="text-sm font-semibold v2-sidebar-text">上传图片</span>
+            <button id="add-upload-row-btn" class="w-8 h-8 flex items-center justify-center bg-black/5 rounded-lg text-xl hover:bg-black/10 transition-colors">+</button>
+        </div>
+        <!-- (已修改) 正方形 (aspect-square), 新图标 (add_photo_alternate) -->
+        <label for="main-image-upload" class="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-black/20 rounded-xl bg-black/5 v2-pattern-bg cursor-pointer hover:border-black/40 v2-sidebar-full-content">
+            <span class="material-symbols-outlined text-6xl text-black/30">add_photo_alternate</span>
+        </label>
+        <input id="main-image-upload" type="file" class="sr-only">
+
+        <!-- 折叠时的上传图标 -->
+        <label for="main-image-upload-icon" class="v2-sidebar-icon-content w-12 h-12 bg-black/5 rounded-xl cursor-pointer hover:bg-black/10">
+            <span class="material-symbols-outlined text-3xl text-black/50">add_photo_alternate</span>
+        </label>
+        <input id="main-image-upload-icon" type="file" class="sr-only">
+
+        <!-- 动态上传框容器 -->
+        <div id="additional-uploads-container" class="space-y-2 v2-sidebar-full-content">
+            <!-- JS 动态添加上传框 -->
+        </div>
+    </div>
+    
+    <!-- 尺寸区域 -->
+    <div class="space-y-4">
+        <h3 class="text-sm font-semibold v2-sidebar-text v2-sidebar-full-content">尺寸</h3>
+        <div class="relative v2-sidebar-full-content" id="aspect-ratio-wrapper">
+            <!-- 显示当前选择的按钮 -->
+            <button id="current-aspect-ratio-btn" class="flex items-center justify-between w-full bg-white/50 border border-black/10 rounded-xl text-black py-3 px-4 transition-all hover:bg-white/80">
+                <span id="current-aspect-ratio-display" class="flex items-center gap-2">
+                    <span class="w-4 h-4 bg-gray-600 rounded-sm inline-block"></span>
+                    <span class="font-medium v2-sidebar-text">1:1</span>
+                </span>
+                <span class="material-symbols-outlined text-black/40 v2-sidebar-text">expand_more</span>
+            </button>
+            
+            <!-- (已修改) 要求 1: 5个选项, 透明背景 (bg-white/50 backdrop-blur-sm), z-50 -->
+            <div id="aspect-ratio-dropdown" class="hidden absolute z-50 w-full mt-1 bg-white/50 backdrop-blur-sm border border-black/10 rounded-lg shadow-lg">
+                <div id="aspect-ratio-group" class="grid grid-cols-5 gap-1 p-2">
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="true" data-ratio="1:1">
+                        <span class="w-4 h-4 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="false" data-ratio="3:4">
+                        <span class="w-3 h-4 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="false" data-ratio="4:3">
+                        <span class="w-4 h-3 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="false" data-ratio="16:9">
+                        <span class="w-5 h-3 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="false" data-ratio="9:16">
+                        <span class="w-3 h-5 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 折叠时的尺寸图标 -->
+        <button id="aspect-ratio-icon-btn" class="v2-sidebar-icon-content w-12 h-12 bg-black/5 rounded-xl cursor-pointer hover:bg-black/10">
+            <span class="material-symbols-outlined text-3xl text-black/50">aspect_ratio</span>
+        </button>
+    </div>
+
+    <!-- 数量区域 -->
+    <div class="space-y-4">
+        <h3 class="text-sm font-semibold v2-sidebar-text v2-sidebar-full-content">数量</h3>
+        <!-- (已修改) 要求 3: p-3 -> p-2.5 -->
+        <div id="image-count-group" class="grid grid-cols-4 gap-3 v2-sidebar-full-content">
+            <button class="image-count-btn flex items-center justify-center p-2.5 rounded-xl bg-white/50 hover:bg-white/80 transition-colors data-[active=true]:bg-black data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:ring-2 data-[active=true]:ring-black" data-active="true">1</button>
+            <button class="image-count-btn flex items-center justify-center p-2.5 rounded-xl bg-white/50 hover:bg-white/80 transition-colors data-[active=true]:bg-black data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:ring-2 data-[active=true]:ring-black" data-active="false">2</button>
+            <button class="image-count-btn flex items-center justify-center p-2.5 rounded-xl bg-white/50 hover:bg-white/80 transition-colors data-[active=true]:bg-black data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:ring-2 data-[active=true]:ring-black" data-active="false">3</button>
+            <button class="image-count-btn flex items-center justify-center p-2.5 rounded-xl bg-white/50 hover:bg-white/80 transition-colors data-[active=true]:bg-black data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:ring-2 data-[active=true]:ring-black" data-active="false">4</button>
+        </div>
+        
+        <!-- 折叠时的数量图标 -->
+        <button class="v2-sidebar-icon-content w-12 h-12 bg-black/5 rounded-xl cursor-pointer hover:bg-black/10">
+            <span class="material-symbols-outlined text-3xl text-black/50">filter_4</span>
+        </button>
+    </div>
+    
+    <!-- 系列图开关 -->
+    <div class="flex items-center justify-between v2-sidebar-full-content v2-hide-on-collapse">
+        <span class="text-sm font-semibold v2-sidebar-text">开启系列图</span>
+        <button id="series-mode-toggle" aria-checked="false" class="v2-switch-btn relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 bg-black/10" role="switch">
+            <span aria-hidden="true" class="v2-switch-dot pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+        </button>
+    </div>
+
+    <!-- 移除左下角用户区域 -->
+    <div class="mt-auto pt-8 border-t border-black/10 v2-sidebar-full-content v2-hide-on-collapse">
+        <!-- 内容已删除 -->
+    </div>
+    
+    <!-- 折叠按钮 -->
+    <button id="sidebar-toggle-btn" class="absolute top-1/2 -right-3.5 -translate-y-1/2 w-7 h-7 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors z-10">
+        <span id="toggle-icon-left" class="material-symbols-outlined text-lg">chevron_left</span>
+        <span id="toggle-icon-right" class="material-symbols-outlined text-lg hidden">chevron_right</span>
+    </button>
+</aside>
+
+<!-- 2. 主内容区域 -->
+<main class="flex-1 flex flex-col bg-gray-50 dark:bg-zinc-900">
+    <!-- (已修改) 要求 2: 移除下边框, 添加 "视频" 和 "收藏" 图标 -->
+    <header class="flex items-center justify-end p-4 h-16 shrink-0 border-b-0 border-gray-200 dark:border-zinc-800">
+        <div class="flex items-center gap-6">
+            <!-- 新增图标 -->
+            <button class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors">
+                 <span class="material-symbols-outlined text-xl text-gray-600 dark:text-gray-400">movie</span>
+            </button>
+            <button class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors">
+                 <span class="material-symbols-outlined text-xl text-gray-600 dark:text-gray-400">favorite</span>
+            </button>
+            
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-yellow-400 text-xl !fill-1">monetization_on</span>
+                <span class="text-sm font-semibold">100 Credits</span>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-sm font-bold text-gray-600 dark:text-gray-300">U</div>
+        </div>
+    </header>
+    
+    <!-- 内容区 -->
+    <div class="flex-1 overflow-y-auto p-8 relative">
+        <div id="results-container" class="space-y-8 w-full px-4">
+            <!-- JS 动态生成结果 -->
+            <div class="text-center text-gray-400 pt-16">
+                <span class="material-symbols-outlined text-6xl">auto_awesome</span>
+                <p class="mt-4 text-lg">开始您的第一次创作吧</p>
+                <p class="text-sm">在底部的输入框输入提示词，点击箭头即可生成。</p>
+            </div>
+        </div>
+        
+        <!-- 底部输入框区域 (动态高度) -->
+        <div class="sticky bottom-0 mt-8 -mx-8 px-8 py-4 bg-gradient-to-t from-gray-50/80 dark:from-zinc-900/80 to-transparent backdrop-blur-sm">
+            <div id="prompt-wrapper" class="relative max-w-4xl mx-auto transition-all duration-300">
+                <!-- 输入框 -->
+                <input id="prompt-input" class="w-full h-16 pl-6 pr-56 py-4 rounded-full bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-xl text-base placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition-all duration-300" placeholder="输入提示词..." type="text">
+                
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <!-- (已新增) 新图标 -->
+                    <button class="w-10 h-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                        <span class="material-symbols-outlined text-xl">mic</span>
+                    </button>
+                    <button class="w-10 h-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                        <span class="material-symbols-outlined text-xl">image</span>
+                    </button>
+                    <button class="w-10 h-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                        <span class="material-symbols-outlined text-xl">settings</span>
+                    </button>
+                    
+                    <!-- "AI优化" 按钮 -->
+                    <button class="flex items-center gap-2 px-4 py-2.5 rounded-full bg-yellow-400 text-black text-sm font-semibold hover:bg-yellow-500 transition-colors">
+                        <span class="material-symbols-outlined text-lg">auto_awesome</span>
+                        AI优化
+                    </button>
+                    <!-- 发送按钮 (rounded-full) -->
+                    <button id="generate-btn-bottom" class="w-11 h-11 flex items-center justify-center bg-gray-800 dark:bg-gray-200 text-white dark:text-black rounded-full hover:bg-black dark:hover:bg-white transition-colors">
+                        <span class="material-symbols-outlined text-2xl">arrow_upward</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</div>
+
+<!-- 完整的 JS 逻辑 -->
+<script>
+    // 防止FOUC - DOM加载完成后显示页面
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('loaded');
+
+        // --- 占位提示函数 ---
+        function showComingSoon(featureName) {
+            alert(`${featureName} 功能开发中，敬请期待！`);
+        }
+
+        // --- 按钮组通用逻辑 ---
+        function setupButtonGroup(groupId, isDropdownItem = false) {
+            const group = document.getElementById(groupId);
+            if (!group) return;
+
+            group.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+
+                group.querySelectorAll('button').forEach(btn => {
+                    btn.dataset.active = 'false';
+                    if (btn.classList.contains('image-count-btn')) {
+                         btn.classList.remove('bg-black', 'text-white', 'font-semibold', 'ring-2', 'ring-black');
+                         btn.classList.add('bg-white/50', 'hover:bg-white/80');
+                    }
+                    if (btn.classList.contains('aspect-ratio-btn')) {
+                        btn.classList.remove('bg-black', 'border-black');
+                        btn.querySelector('span')?.classList.remove('bg-white');
+                        btn.querySelector('span')?.classList.add('bg-gray-500');
+                    }
+                });
+                
+                button.dataset.active = 'true';
+                if (button.classList.contains('image-count-btn')) {
+                    button.classList.add('bg-black', 'text-white', 'font-semibold', 'ring-2', 'ring-black');
+                    button.classList.remove('bg-white/50', 'hover:bg-white/80');
+                }
+                if (button.classList.contains('aspect-ratio-btn')) {
+                    button.classList.add('bg-black', 'border-black');
+                    button.querySelector('span')?.classList.add('bg-white');
+                    button.querySelector('span')?.classList.remove('bg-gray-500');
+                }
+
+                if (isDropdownItem) {
+                    const wrapper = group.closest('#aspect-ratio-wrapper');
+                    const displaySpan = wrapper.querySelector('#current-aspect-ratio-display');
+                    const dropdown = wrapper.querySelector('#aspect-ratio-dropdown');
+                    
+                    const ratioText = button.dataset.ratio;
+                    let iconHTML = '';
+                    if (ratioText === '1:1') iconHTML = '<span class="w-4 h-4 bg-gray-600 rounded-sm inline-block"></span>';
+                    else if (ratioText === '16:9') iconHTML = '<span class="w-5 h-3 bg-gray-600 rounded-sm inline-block"></span>';
+                    else if (ratioText === '3:4') iconHTML = '<span class="w-3 h-4 bg-gray-600 rounded-sm inline-block"></span>';
+                    else if (ratioText === '4:3') iconHTML = '<span class="w-4 h-3 bg-gray-600 rounded-sm inline-block"></span>';
+                    else if (ratioText === '9:16') iconHTML = '<span class="w-3 h-5 bg-gray-600 rounded-sm inline-block"></span>';
+
+                    displaySpan.innerHTML = `${iconHTML} <span class="font-medium v2-sidebar-text">${ratioText}</span>`;
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        // 1. 设置数量按钮组
+        setupButtonGroup('image-count-group');
+        
+        // 2. 设置尺寸下拉菜单
+        const aspectRatioBtn = document.getElementById('current-aspect-ratio-btn');
+        const aspectRatioDropdown = document.getElementById('aspect-ratio-dropdown');
+        const aspectRatioIconBtn = document.getElementById('aspect-ratio-icon-btn');
+        
+        aspectRatioBtn.addEventListener('click', () => {
+            aspectRatioDropdown.classList.toggle('hidden');
+        });
+        aspectRatioIconBtn.addEventListener('click', () => {
+             document.getElementById('sidebar-toggle-btn').click();
+             setTimeout(() => {
+                aspectRatioBtn.click();
+             }, 300);
+        });
+        setupButtonGroup('aspect-ratio-group', true);
+
+        // 3. 动态生成结果
+        const generateBtnBottom = document.getElementById('generate-btn-bottom');
+        const resultsContainer = document.getElementById('results-container');
+        const promptInput = document.getElementById('prompt-input');
+
+        generateBtnBottom.addEventListener('click', () => {
+            const promptText = promptInput.value || "新的生成结果...";
+            
+            const placeholder = resultsContainer.querySelector('.text-center');
+            if (placeholder) {
+                placeholder.remove();
+            }
+            
+            const countBtn = document.querySelector('#image-count-group button[data-active="true"]');
+            const count = countBtn ? parseInt(countBtn.textContent) : 1;
+
+            const newResultGroup = document.createElement('div');
+            newResultGroup.className = 'space-y-4';
+            
+            const header = document.createElement('div');
+            header.className = 'flex justify-between items-center';
+            header.innerHTML = `
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    ${promptText.substring(0, 40)}${promptText.length > 40 ? '...' : ''}
+                </p>
+                <button class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"><span class="material-symbols-outlined text-base">more_horiz</span></button>
+            `;
+            
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-2 md:grid-cols-4 gap-4';
+            
+            for (let i = 0; i < count; i++) {
+                const loadingPlaceholder = document.createElement('div');
+                loadingPlaceholder.className = 'w-full aspect-square rounded-lg bg-gray-200 dark:bg-zinc-800 animate-pulse';
+                grid.appendChild(loadingPlaceholder);
+            }
+            
+            newResultGroup.appendChild(header);
+            newResultGroup.appendChild(grid);
+            resultsContainer.insertBefore(newResultGroup, resultsContainer.firstChild);
+            
+            setTimeout(() => {
+                grid.innerHTML = '';
+                for (let i = 1; i <= count; i++) {
+                    const color1 = Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                    const color2 = Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                    
+                    const imageWrapper = document.createElement('div');
+                    imageWrapper.className = 'relative group w-full aspect-square rounded-xl flex-shrink-0 overflow-hidden';
+                    
+                    const imageDiv = document.createElement('div');
+                    imageDiv.style.backgroundImage = `linear-gradient(to bottom right, #${color1}, #${color2})`;
+                    imageDiv.className = 'w-full h-full';
+                    
+                    const overlay = document.createElement('div');
+                    overlay.className = 'absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3';
+                    overlay.innerHTML = `
+                        <span class="material-symbols-outlined text-white text-2xl cursor-pointer hover:scale-110 p-2" title="修改图片">edit</span>
+                        <span class="material-symbols-outlined text-white text-2xl cursor-pointer hover:scale-110 p-2" title="转视频">movie</span>
+                        <span class="material-symbols-outlined text-white text-2xl cursor-pointer hover:scale-110 p-2" title="收藏">favorite</span>
+                        <span class="material-symbols-outlined text-white text-2xl cursor-pointer hover:scale-110 p-2" title="下载">download</span>
+                    `;
+                    
+                    imageWrapper.appendChild(imageDiv);
+                    imageWrapper.appendChild(overlay);
+                    grid.appendChild(imageWrapper);
+                }
+            }, 2000);
+        });
+
+        // 4. 动态添加上传框
+        const addUploadRowBtn = document.getElementById('add-upload-row-btn');
+        const additionalUploadsContainer = document.getElementById('additional-uploads-container');
+        let uploadRowCount = 0;
+        const maxUploadRows = 3;
+
+        addUploadRowBtn.addEventListener('click', () => {
+            if (uploadRowCount >= maxUploadRows) return;
+            uploadRowCount++;
+            
+            const newRow = document.createElement('div');
+            newRow.className = 'grid grid-cols-2 gap-2';
+            
+            const picIndex1 = (uploadRowCount - 1) * 2 + 1;
+            const picIndex2 = picIndex1 + 1;
+
+            newRow.innerHTML = `
+                <label for="ref-img-${picIndex1}" class="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-black/20 rounded-xl bg-black/5 v2-pattern-bg cursor-pointer hover:border-black/40">
+                    <span class="material-symbols-outlined text-3xl text-black/30">add_photo_alternate</span>
+                    <span class="text-xs text-black/40 v2-sidebar-text">Pic ${picIndex1}</span>
+                </label>
+                <input id="ref-img-${picIndex1}" type="file" class="sr-only">
+                <label for="ref-img-${picIndex2}" class="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-black/20 rounded-xl bg-black/5 v2-pattern-bg cursor-pointer hover:border-black/40">
+                    <span class="material-symbols-outlined text-3xl text-black/30">add_photo_alternate</span>
+                    <span class="text-xs text-black/40 v2-sidebar-text">Pic ${picIndex2}</span>
+                </label>
+                <input id="ref-img-${picIndex2}" type="file" class="sr-only">
+            `;
+            
+            additionalUploadsContainer.appendChild(newRow);
+            if (uploadRowCount >= maxUploadRows) {
+                addUploadRowBtn.disabled = true;
+                addUploadRowBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        // 5. 侧边栏折叠功能（重构版）
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('sidebar-toggle-btn');
+        const iconLeft = document.getElementById('toggle-icon-left');
+        const iconRight = document.getElementById('toggle-icon-right');
+        const promptWrapper = document.getElementById('prompt-wrapper');
+        // promptInput 已在上方第320行声明，此处复用
+
+        // 折叠/展开函数
+        function toggleSidebar() {
+            const isCollapsed = sidebar.classList.contains('w-20');
+
+            sidebar.classList.toggle('is-collapsed');
+
+            if (isCollapsed) {
+                // --- 展开 ---
+                sidebar.classList.remove('w-20', 'p-4');
+                sidebar.classList.add('w-[340px]', 'p-6');
+                iconLeft.classList.remove('hidden');
+                iconRight.classList.add('hidden');
+                // 展开时：恢复默认高度和圆角
+                promptInput.classList.remove('h-40', 'rounded-3xl');
+                promptInput.classList.add('h-16', 'rounded-full');
+            } else {
+                // --- 折叠 ---
+                sidebar.classList.add('w-20', 'p-4');
+                sidebar.classList.remove('w-[340px]', 'p-6');
+                iconLeft.classList.add('hidden');
+                iconRight.classList.remove('hidden');
+                // 折叠时：增加高度（h-16 → h-40）并调整圆角
+                promptInput.classList.remove('h-16', 'rounded-full');
+                promptInput.classList.add('h-40', 'rounded-3xl');
+            }
+        }
+
+        // 点击折叠按钮
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleSidebar();
+        });
+
+        // 点击侧边栏空白区域折叠/展开
+        sidebar.addEventListener('click', (e) => {
+            // 检查是否点击的是空白区域（不是按钮、输入框等交互元素）
+            if (e.target === sidebar || e.target.classList.contains('v2-sidebar-full-content') || e.target.classList.contains('v2-sidebar-icon-content')) {
+                toggleSidebar();
+            }
+        });
+
+        // 阻止特定元素冒泡（避免点击时触发折叠）
+        // 只阻止input和label，不阻止按钮组的button
+        const interactiveElements = sidebar.querySelectorAll('input, label, #add-upload-row-btn, #sidebar-toggle-btn');
+        interactiveElements.forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        });
+
+        // 6. 图片上传预览功能
+        const uploadedImages = []; // 存储已上传的图片
+
+        // 主上传框
+        const mainImageUpload = document.getElementById('main-image-upload');
+        const mainImageUploadIcon = document.getElementById('main-image-upload-icon');
+        const mainUploadLabel = mainImageUpload.previousElementSibling;
+        const mainUploadLabelIcon = mainImageUploadIcon.previousElementSibling;
+
+        // 处理图片上传
+        async function handleImageUpload(file, labelElement) {
+            // 验证文件
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert('请上传 PNG、JPG 或 WebP 格式的图片');
+                return;
+            }
+
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                alert('图片大小不能超过 10MB');
+                return;
+            }
+
+            // 读取文件为Base64
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+
+                // 保存到数组
+                uploadedImages.push({
+                    file: file,
+                    dataUrl: dataUrl,
+                    name: file.name
+                });
+
+                // 显示预览
+                showImagePreview(labelElement, dataUrl, uploadedImages.length - 1);
+
+                console.log('已上传图片:', file.name, '总数:', uploadedImages.length);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 显示图片预览
+        function showImagePreview(labelElement, dataUrl, index) {
+            // 隐藏原有的图标
+            labelElement.innerHTML = '';
+
+            // 创建预览容器
+            const preview = document.createElement('div');
+            preview.className = 'v2-upload-preview w-full h-full relative';
+            preview.style.backgroundImage = `url(${dataUrl})`;
+
+            // 创建删除按钮
+            const deleteBtn = document.createElement('div');
+            deleteBtn.className = 'v2-upload-delete';
+            deleteBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">close</span>';
+            deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                removeImage(index, labelElement);
+            });
+
+            preview.appendChild(deleteBtn);
+            labelElement.appendChild(preview);
+
+            // 添加点击查看功能（未来实现）
+            preview.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('v2-upload-delete') && !e.target.closest('.v2-upload-delete')) {
+                    console.log('点击查看图片:', index);
+                    // 未来：打开图片查看器
+                }
+            });
+        }
+
+        // 删除图片
+        function removeImage(index, labelElement) {
+            // 从数组中删除
+            uploadedImages.splice(index, 1);
+
+            // 恢复上传框
+            labelElement.innerHTML = '<span class="material-symbols-outlined text-6xl text-black/30">add_photo_alternate</span>';
+
+            console.log('已删除图片，剩余:', uploadedImages.length);
+        }
+
+        // 主上传框事件
+        mainImageUpload.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleImageUpload(e.target.files[0], mainUploadLabel);
+                e.target.value = ''; // 清空input以允许重复上传
+            }
+        });
+
+        mainImageUploadIcon.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleImageUpload(e.target.files[0], mainUploadLabelIcon);
+                e.target.value = '';
+            }
+        });
+
+        // 动态添加的上传框也需要处理
+        const originalAppendChild = additionalUploadsContainer.appendChild;
+        additionalUploadsContainer.appendChild = function(newRow) {
+            const result = originalAppendChild.call(this, newRow);
+
+            // 为新添加的input添加事件监听
+            const inputs = newRow.querySelectorAll('input[type="file"]');
+            inputs.forEach(input => {
+                input.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        const label = input.previousElementSibling;
+                        handleImageUpload(e.target.files[0], label);
+                        e.target.value = '';
+                    }
+                });
+            });
+
+            return result;
+        };
+
+        // 7. 开关系列图
+        const seriesToggle = document.getElementById('series-mode-toggle');
+        seriesToggle.addEventListener('click', () => {
+            const isChecked = seriesToggle.getAttribute('aria-checked') === 'true';
+            seriesToggle.setAttribute('aria-checked', !isChecked);
+        });
+
+        // 8. 为未实现功能的按钮添加占位提示
+        // 注意：使用事件委托来处理动态生成的按钮
+
+        // 顶部header按钮（视频、收藏）
+        document.querySelector('header').addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+
+            const icon = btn.querySelector('.material-symbols-outlined');
+            if (!icon) return;
+
+            const iconText = icon.textContent.trim();
+            if (iconText === 'movie') {
+                showComingSoon('视频管理');
+            } else if (iconText === 'favorite') {
+                showComingSoon('收藏管理');
+            }
+        });
+
+        // 底部输入框右侧按钮（mic/image/settings/AI优化）
+        const promptInputArea = document.querySelector('#prompt-wrapper');
+        promptInputArea.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn || btn.id === 'generate-btn-bottom') return; // 排除生成按钮
+
+            const icon = btn.querySelector('.material-symbols-outlined');
+            if (!icon) return;
+
+            const iconText = icon.textContent.trim();
+            if (iconText === 'mic') {
+                showComingSoon('语音输入');
+            } else if (iconText === 'image') {
+                showComingSoon('图片识别提示词');
+            } else if (iconText === 'settings') {
+                showComingSoon('高级设置');
+            } else if (iconText === 'auto_awesome') {
+                showComingSoon('AI提示词优化');
+            }
+        });
+
+        // 结果容器中的动态按钮（使用事件委托）
+        resultsContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            const icon = e.target.closest('.material-symbols-outlined');
+
+            // 任务卡片的"..."菜单按钮
+            if (btn && btn.querySelector('.material-symbols-outlined')?.textContent.trim() === 'more_horiz') {
+                showComingSoon('任务操作菜单');
+                return;
+            }
+
+            // overlay中的图标按钮
+            if (icon && icon.closest('.group-hover\\:opacity-100, .opacity-0')) {
+                const iconText = icon.textContent.trim();
+                if (iconText === 'edit') {
+                    showComingSoon('编辑图片');
+                } else if (iconText === 'movie') {
+                    showComingSoon('转视频');
+                } else if (iconText === 'favorite') {
+                    showComingSoon('收藏图片');
+                } else if (iconText === 'download') {
+                    showComingSoon('下载图片');
+                }
+            }
+        });
+
+    });
+</script>
+
+</body></html>

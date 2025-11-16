@@ -1,0 +1,976 @@
+/* ============================================
+   AIIMAGE V2 - 主样式文件
+   创建时间: 2025-11-14
+   说明: 所有样式使用 .v2-app 作用域，确保不影响旧版
+   ============================================ */
+
+/* ============================================
+   全局样式（仅在 .v2-app 内生效）
+   ============================================ */
+
+.v2-app * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Material Icons 图标配置 */
+.v2-app .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ============================================
+   背景图案
+   ============================================ */
+
+.v2-app .v2-pattern-bg {
+    background-image:
+        radial-gradient(circle at 1px 1px, rgba(0,0,0,0.15) 1px, transparent 0),
+        radial-gradient(circle at 11px 11px, rgba(0,0,0,0.15) 1px, transparent 0);
+    background-size: 20px 20px;
+}
+
+html.dark .v2-app .v2-pattern-bg {
+    background-image:
+        radial-gradient(circle at 1px 1px, rgba(0,0,0,0.25) 1px, transparent 0),
+        radial-gradient(circle at 11px 11px, rgba(0,0,0,0.25) 1px, transparent 0);
+}
+
+/* ============================================
+   开关按钮样式
+   ============================================ */
+
+.v2-app .v2-switch-btn[aria-checked="true"] {
+    background-color: #000;
+}
+
+.v2-app .v2-switch-btn[aria-checked="true"] .v2-switch-dot {
+    transform: translateX(1.25rem); /* 5 * 0.25rem = 20px */
+}
+
+/* ============================================
+   侧边栏折叠效果
+   ============================================ */
+
+.v2-app .v2-sidebar.is-collapsed .v2-sidebar-text {
+    display: none;
+}
+
+.v2-app .v2-sidebar.is-collapsed .v2-sidebar-full-content {
+    display: none;
+}
+
+.v2-app .v2-sidebar.is-collapsed .v2-sidebar-icon-content {
+    display: flex; /* 折叠时显示 */
+}
+
+.v2-app .v2-sidebar-icon-content {
+    display: none; /* 默认隐藏 */
+    align-items: center;
+    justify-content: center;
+}
+
+/* 折叠时隐藏的额外元素 */
+.v2-app .v2-sidebar.is-collapsed .v2-hide-on-collapse {
+    display: none !important;
+}
+
+/* ============================================
+   Toast提示系统（优雅版）
+   ============================================ */
+
+.v2-app .v2-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    background: rgba(255, 217, 0, 0.85); /* 🎨 降低透明度至85%，更柔和 */
+    backdrop-filter: blur(12px) saturate(180%); /* 🎨 增强毛玻璃效果 */
+    box-shadow:
+        0 4px 12px rgba(255, 217, 0, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.3); /* 🎨 内阴影，增加质感 */
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 380px;
+    color: #000;
+    font-weight: 500;
+    font-size: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08); /* 细边框 */
+    /* 🎨 移除这里的animation，改为JS控制 */
+}
+
+.v2-app .v2-toast.success {
+    background: rgba(16, 185, 129, 0.85);
+    backdrop-filter: blur(12px) saturate(180%);
+    box-shadow:
+        0 4px 12px rgba(16, 185, 129, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.v2-app .v2-toast.warning {
+    background: rgba(251, 191, 36, 0.85);
+    backdrop-filter: blur(12px) saturate(180%);
+    box-shadow:
+        0 4px 12px rgba(251, 191, 36, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    color: #000;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.v2-app .v2-toast.error {
+    background: rgba(239, 68, 68, 0.85);
+    backdrop-filter: blur(12px) saturate(180%);
+    box-shadow:
+        0 4px 12px rgba(239, 68, 68, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.v2-app .v2-toast.info {
+    background: rgba(255, 217, 0, 0.85);
+    backdrop-filter: blur(12px) saturate(180%);
+    box-shadow:
+        0 4px 12px rgba(255, 217, 0, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    color: #000;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* 🎨 柔和的滑入动画（无弹性，自然流畅） */
+@keyframes v2-toast-slideIn {
+    0% {
+        transform: translateX(100%) translateY(-10px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0) translateY(0);
+        opacity: 1;
+    }
+}
+
+/* 🎨 柔和的滑出动画 */
+@keyframes v2-toast-slideOut {
+    0% {
+        transform: translateX(0) translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(100%) translateY(-10px);
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   图片加载渐现效果
+   ============================================ */
+
+/* 图片加载占位符 */
+.v2-app .v2-image-loading {
+    background: linear-gradient(
+        90deg,
+        rgba(200, 200, 200, 0.1) 0%,
+        rgba(200, 200, 200, 0.2) 50%,
+        rgba(200, 200, 200, 0.1) 100%
+    );
+    background-size: 200% 100%;
+    animation: v2-shimmer 1.5s ease-in-out infinite;
+}
+
+html.dark .v2-app .v2-image-loading {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 0%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.03) 100%
+    );
+    background-size: 200% 100%;
+}
+
+@keyframes v2-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* 图片渐现效果 */
+.v2-app .v2-image-fade-in {
+    animation: v2-fadeIn 0.5s ease-out;
+}
+
+@keyframes v2-fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* 图片初始隐藏状态 */
+.v2-app img[data-fade-in] {
+    opacity: 0;
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.v2-app img[data-fade-in].loaded {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ============================================
+   图片查看器
+   ============================================ */
+
+.v2-app .v2-viewer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: v2-fadeIn 0.2s ease-out;
+}
+
+.v2-app .v2-viewer-container {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.v2-app .v2-viewer-image {
+    max-width: 100%;
+    max-height: calc(90vh - 100px);
+    object-fit: contain;
+    border-radius: 12px;
+    transition: opacity 0.3s ease-out;
+}
+
+/* Loading 指示器 */
+.v2-app .v2-viewer-loading {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #ffffff;
+    font-size: 0.85rem;
+    z-index: 10002;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 12px;
+}
+
+.v2-app .v2-viewer-loading-spinner {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    animation: v2-viewer-spin 0.9s linear infinite;
+}
+
+.v2-app .v2-viewer-loading-text {
+    letter-spacing: 0.04em;
+}
+
+@keyframes v2-viewer-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.v2-app .v2-viewer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.v2-app .v2-viewer-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.v2-app .v2-viewer-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+@keyframes v2-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ============================================
+   上传图片预览
+   ============================================ */
+
+.v2-app .v2-upload-preview {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    border: 3px solid #000; /* 加粗黑边 */
+}
+
+.v2-app .v2-upload-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.v2-app .v2-upload-preview:hover .v2-upload-delete {
+    opacity: 1;
+}
+
+.v2-app .v2-upload-delete:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* 空白上传框的删除按钮 */
+.v2-app .v2-upload-label-wrapper {
+    position: relative;
+}
+
+.v2-app .v2-upload-empty-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+.v2-app .v2-upload-label-wrapper:hover .v2-upload-empty-delete {
+    opacity: 1;
+}
+
+.v2-app .v2-upload-empty-delete:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* ============================================
+   操作菜单下拉
+   ============================================ */
+
+.v2-app .v2-dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    z-index: 50;
+    min-width: 56px;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.v2-app .v2-dropdown-menu.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+}
+
+html.dark .v2-app .v2-dropdown-menu {
+    background: rgba(39, 39, 42, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.v2-app .v2-dropdown-item {
+    padding: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: #3f3f46;
+}
+
+html.dark .v2-app .v2-dropdown-item {
+    color: #a1a1aa;
+}
+
+.v2-app .v2-dropdown-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #000;
+}
+
+html.dark .v2-app .v2-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.v2-app .v2-dropdown-item .material-symbols-outlined {
+    font-size: 22px;
+}
+
+/* ============================================
+   响应式适配
+   ============================================ */
+
+@media (max-width: 768px) {
+    .v2-app .v2-sidebar {
+        position: fixed;
+        left: -100%;
+        transition: left 0.3s;
+        z-index: 100;
+    }
+
+    .v2-app .v2-sidebar.is-open {
+        left: 0;
+    }
+}
+
+/* ============================================
+   动画和过渡
+   ============================================ */
+
+.v2-app .v2-transition-all {
+    transition: all 0.3s ease-in-out;
+}
+
+/* ============================================
+   图片容器动态尺寸（复用旧版逻辑）
+   根据 data-aspect 属性动态调整图片容器高度
+   ============================================ */
+
+/* 基础图片容器 - 使用 aspect-ratio CSS 属性 */
+.v2-app .v2-image-wrapper[data-aspect="1:1"] {
+    aspect-ratio: 1 / 1;
+}
+
+.v2-app .v2-image-wrapper[data-aspect="16:9"] {
+    aspect-ratio: 16 / 9;
+}
+
+.v2-app .v2-image-wrapper[data-aspect="9:16"] {
+    aspect-ratio: 9 / 16;
+}
+
+.v2-app .v2-image-wrapper[data-aspect="4:3"] {
+    aspect-ratio: 4 / 3;
+}
+
+.v2-app .v2-image-wrapper[data-aspect="3:4"] {
+    aspect-ratio: 3 / 4;
+}
+
+.v2-app .v2-image-wrapper[data-aspect="3:2"] {
+    aspect-ratio: 3 / 2;
+}
+
+.v2-app .v2-image-wrapper[data-aspect="2:3"] {
+    aspect-ratio: 2 / 3;
+}
+
+/* 图片元素填充容器 */
+.v2-app .v2-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ============================================
+   骨架屏样式（Skeleton Loading）
+   ============================================ */
+
+.v2-app .v2-skeleton-card {
+    pointer-events: none;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+}
+
+html.dark .v2-app .v2-skeleton-card {
+    background: rgba(39, 39, 42, 0.5);
+}
+
+.v2-app .v2-skeleton-header,
+.v2-app .v2-skeleton-prompt,
+.v2-app .v2-skeleton-images,
+.v2-app .v2-skeleton-actions {
+    background: linear-gradient(90deg,
+        rgba(0, 0, 0, 0.06) 25%,
+        rgba(0, 0, 0, 0.1) 50%,
+        rgba(0, 0, 0, 0.06) 75%
+    );
+    background-size: 200% 100%;
+    animation: v2-shimmer-loading 2s infinite;
+    border-radius: 8px;
+}
+
+html.dark .v2-app .v2-skeleton-header,
+html.dark .v2-app .v2-skeleton-prompt,
+html.dark .v2-app .v2-skeleton-images,
+html.dark .v2-app .v2-skeleton-actions {
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%
+    );
+}
+
+.v2-app .v2-skeleton-header {
+    height: 24px;
+    width: 60%;
+    margin-bottom: 1rem;
+}
+
+.v2-app .v2-skeleton-prompt {
+    height: 20px;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.v2-app .v2-skeleton-images {
+    height: 200px;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.v2-app .v2-skeleton-actions {
+    height: 36px;
+    width: 100%;
+}
+
+@keyframes v2-shimmer-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ============================================
+   登录/注册弹窗样式（完全复用旧版逻辑）
+   ============================================ */
+
+.v2-auth-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.v2-auth-modal.active {
+    display: flex;
+}
+
+.v2-auth-modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: v2-slideUp 0.3s ease-out;
+    position: relative;
+}
+
+html.dark .v2-auth-modal-content {
+    background: #27272a;
+}
+
+@keyframes v2-slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.v2-auth-modal-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.v2-auth-modal-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #18181b;
+    margin-bottom: 8px;
+}
+
+html.dark .v2-auth-modal-title {
+    color: #fafafa;
+}
+
+.v2-auth-modal-subtitle {
+    font-size: 14px;
+    color: #71717a;
+}
+
+html.dark .v2-auth-modal-subtitle {
+    color: #a1a1aa;
+}
+
+.v2-auth-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    color: #3f3f46;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+    padding: 0;
+}
+
+html.dark .v2-auth-close {
+    background: rgba(255, 255, 255, 0.1);
+    color: #a1a1aa;
+}
+
+.v2-auth-close:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+html.dark .v2-auth-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.v2-auth-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    background: #f4f4f5;
+    padding: 4px;
+    border-radius: 8px;
+}
+
+html.dark .v2-auth-tabs {
+    background: #3f3f46;
+}
+
+.v2-auth-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: #71717a;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.v2-auth-tab.active {
+    background: #FFD900;
+    color: #000;
+}
+
+.v2-auth-error {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+}
+
+.v2-auth-error.active {
+    display: block;
+}
+
+.v2-auth-form {
+    /* 表单容器 */
+}
+
+.v2-auth-form-group {
+    margin-bottom: 16px;
+}
+
+.v2-auth-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #71717a;
+    margin-bottom: 8px;
+}
+
+html.dark .v2-auth-label {
+    color: #a1a1aa;
+}
+
+.v2-auth-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    color: #18181b;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+html.dark .v2-auth-input {
+    background: #3f3f46;
+    border-color: #52525b;
+    color: #fafafa;
+}
+
+.v2-auth-input:focus {
+    outline: none;
+    border-color: #FFD900;
+    background: white;
+}
+
+html.dark .v2-auth-input:focus {
+    background: #27272a;
+}
+
+.v2-auth-submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: #FFD900;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 20px;
+}
+
+.v2-auth-submit-btn:hover {
+    background: #eac300;
+    transform: translateY(-1px);
+}
+
+.v2-auth-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.v2-auth-submit-btn.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.v2-auth-submit-btn.loading::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(0, 0, 0, 0.4);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: v2-auth-spin 0.8s linear infinite;
+    transform: translateY(-50%);
+}
+
+@keyframes v2-auth-spin {
+    to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* ============================================
+   说明:
+   - 弹窗样式独立，不需要 .v2-app 前缀
+   - 所有自定义class使用 .v2- 前缀
+   - 确保不会与旧版样式冲突
+   ============================================ */
+
+/* ============================================
+   自定义确认框组件
+   ============================================ */
+
+.v2-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease-out;
+}
+
+.v2-confirm-overlay.active {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.v2-confirm-content {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: all 0.2s ease-out;
+}
+
+.v2-confirm-overlay.active .v2-confirm-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.v2-confirm-icon {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.v2-confirm-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.v2-confirm-text {
+    font-size: 15px;
+    color: #6b7280;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.v2-confirm-message {
+    margin-bottom: 28px;
+}
+
+.v2-confirm-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.v2-confirm-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-out;
+    border: none;
+    outline: none;
+}
+
+.v2-confirm-cancel {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.v2-confirm-cancel:hover {
+    background: #e5e7eb;
+}
+
+.v2-confirm-ok {
+    background: #fbbf24;
+    color: #000;
+}
+
+.v2-confirm-ok:hover {
+    background: #f59e0b;
+    transform: translateY(-1px);
+}
+
+/* Dark mode support */
+html.dark .v2-confirm-content {
+    background: #18181b;
+}
+
+html.dark .v2-confirm-title {
+    color: #f3f4f6;
+}
+
+html.dark .v2-confirm-text {
+    color: #9ca3af;
+}
+
+html.dark .v2-confirm-cancel {
+    background: #27272a;
+    color: #d4d4d8;
+}
+
+html.dark .v2-confirm-cancel:hover {
+    background: #3f3f46;
+}

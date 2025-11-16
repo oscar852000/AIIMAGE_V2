@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>粒子AI生图 V2</title>
+<!-- Version: 2.3.0 - 修复系列图API逻辑和状态管理 -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- 引入 Material Symbols 图标库 -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<!-- V2独立样式文件 -->
+<link href="/v2/css/main.css?v=20251115006" rel="stylesheet"/>
+<!-- 引入V2应用模块 -->
+<script type="module" src="/v2/js/app.js?v=20251115006"></script>
+<style>
+    /* 防止FOUC - 页面加载时隐藏内容 */
+    body:not(.loaded) {
+        opacity: 0;
+    }
+    body.loaded {
+        opacity: 1;
+        transition: opacity 0.3s ease-in;
+    }
+
+    /* 防止Material Icons加载时显示文本 */
+    .material-symbols-outlined {
+        font-display: block;
+    }
+    body:not(.loaded) .material-symbols-outlined {
+        visibility: hidden;
+    }
+
+    /* 折叠效果 - 内联确保生效 */
+    .v2-app .v2-sidebar.is-collapsed .v2-hide-on-collapse {
+        display: none !important;
+    }
+    .v2-app .v2-sidebar.is-collapsed .v2-sidebar-text {
+        display: none !important;
+    }
+    .v2-app .v2-sidebar.is-collapsed .v2-sidebar-full-content {
+        display: none !important;
+    }
+    .v2-app .v2-sidebar.is-collapsed .v2-sidebar-icon-content {
+        display: flex !important;
+    }
+
+    /* 🔑 修复1: 解决折叠/展开时的内容闪烁问题 */
+    .v2-sidebar .v2-sidebar-full-content,
+    .v2-sidebar .v2-sidebar-icon-content {
+        transition: opacity 0.15s ease-out;
+    }
+    /* 在折叠/展开动画期间隐藏内容 */
+    .v2-sidebar.transitioning .v2-sidebar-full-content,
+    .v2-sidebar.transitioning .v2-sidebar-icon-content {
+        opacity: 0;
+    }
+    /* 展开状态（非折叠，非transitioning） */
+    .v2-sidebar:not(.is-collapsed):not(.transitioning) .v2-sidebar-full-content {
+        opacity: 1;
+    }
+    /* 折叠状态（折叠，非transitioning） */
+    .v2-sidebar.is-collapsed:not(.transitioning) .v2-sidebar-icon-content {
+        opacity: 1;
+    }
+
+    /* 🔑 修复2: 折叠按钮固定在分界线上，不随侧边栏宽度变化 */
+    #sidebar-toggle-btn {
+        position: fixed !important;
+        left: 340px !important; /* 默认展开时的位置：340px - 3.5 = 336.5px */
+        transform: translateX(-50%) translateY(-50%) !important;
+        transition: left 0.3s ease !important;
+    }
+    .v2-sidebar.is-collapsed ~ * #sidebar-toggle-btn,
+    .v2-sidebar.is-collapsed #sidebar-toggle-btn {
+        left: 80px !important; /* 折叠时的位置：80px / 2 = 40px */
+    }
+
+    /* 🔑 修复3: 折叠时的缩略图容器 */
+    .v2-collapsed-thumbnails {
+        display: none;
+    }
+    .v2-sidebar.is-collapsed .v2-collapsed-thumbnails {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .v2-collapsed-thumbnail {
+        width: 48px;
+        height: 48px;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+    }
+    .v2-collapsed-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .v2-collapsed-thumbnail:hover::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.2);
+    }
+    .v2-app .v2-sidebar-icon-content {
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* textarea按钮固定位置 - 固定在底部 */
+    #prompt-wrapper .absolute.right-3 {
+        position: absolute;
+        right: 0.75rem;
+        bottom: 0.75rem;  /* 🔑 固定在底部，不随高度居中 */
+    }
+
+    /* 🎨 自适应高度输入框优化 */
+    #prompt-input {
+        /* 移除rounded-full，使用自定义圆角 */
+        border-radius: 32px;
+        /* 最小高度 */
+        min-height: 64px;
+        /* 最大高度：7-8行（未折叠侧边栏时） */
+        max-height: 208px;
+        /* 流畅过渡动画 */
+        transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                    border-radius 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* 高度自动调整 */
+        height: auto;
+        /* 确保文字垂直居中（单行时） */
+        line-height: 1.5;
+    }
+
+    /* 🔑 折叠侧边栏后，输入框允许更高 */
+    .v2-sidebar.is-collapsed ~ main #prompt-input {
+        max-height: calc(100vh - 250px);  /* 折叠后允许占据更多高度 */
+    }
+
+    /* 当输入框扩展时，调整圆角（保持上下圆角，中间直线） */
+    #prompt-input.is-expanded {
+        /* 上下圆角保持32px，左右圆角变小形成直线感 */
+        border-radius: 32px / 32px;
+    }
+
+</style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3b82f6", // blue-500
+                        "background-light": "#ffffff", // white
+                        "background-dark": "#18181b", // zinc-900
+                        "sidebar-yellow": "#FFD900",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.75rem", // rounded-xl
+                        'full': '9999px',
+                    },
+                },
+            },
+        };
+    </script>
+</head>
+<body class="bg-background-light dark:bg-zinc-800 font-display text-gray-800 dark:text-gray-200">
+
+    <!-- 登录/注册弹窗 -->
+    <div id="v2AuthModal" class="v2-app v2-auth-modal">
+        <div class="v2-auth-modal-content">
+            <!-- 关闭按钮 -->
+            <button id="v2AuthCloseBtn" class="v2-auth-close">×</button>
+
+            <!-- 标题 -->
+            <div class="v2-auth-modal-header">
+                <h2 class="v2-auth-modal-title">欢迎使用</h2>
+                <p class="v2-auth-modal-subtitle">粒子AI图片平台</p>
+            </div>
+
+            <!-- Tab切换 -->
+            <div class="v2-auth-tabs">
+                <button class="v2-auth-tab active" data-tab="login">登录</button>
+                <button class="v2-auth-tab" data-tab="register">注册</button>
+            </div>
+
+            <!-- 错误/成功提示 -->
+            <div class="v2-auth-error" id="v2AuthError"></div>
+
+            <!-- 登录表单 -->
+            <form id="v2LoginForm" class="v2-auth-form">
+                <div class="v2-auth-form-group">
+                    <label class="v2-auth-label">用户名</label>
+                    <input type="text" class="v2-auth-input" id="v2LoginUsername" placeholder="请输入用户名" required>
+                </div>
+                <div class="v2-auth-form-group">
+                    <label class="v2-auth-label">密码</label>
+                    <input type="password" class="v2-auth-input" id="v2LoginPassword" placeholder="请输入密码" required>
+                </div>
+                <button type="submit" class="v2-auth-submit-btn">登录</button>
+            </form>
+
+            <!-- 注册表单 -->
+            <form id="v2RegisterForm" class="v2-auth-form" style="display: none;">
+                <div class="v2-auth-form-group">
+                    <label class="v2-auth-label">用户名</label>
+                    <input type="text" class="v2-auth-input" id="v2RegisterUsername" placeholder="至少3个字符" required>
+                </div>
+                <div class="v2-auth-form-group">
+                    <label class="v2-auth-label">邮箱（可选）</label>
+                    <input type="email" class="v2-auth-input" id="v2RegisterEmail" placeholder="your@email.com">
+                </div>
+                <div class="v2-auth-form-group">
+                    <label class="v2-auth-label">密码</label>
+                    <input type="password" class="v2-auth-input" id="v2RegisterPassword" placeholder="至少6个字符" required>
+                </div>
+                <div class="v2-auth-form-group">
+                    <label class="v2-auth-label">确认密码</label>
+                    <input type="password" class="v2-auth-input" id="v2RegisterPasswordConfirm" placeholder="再次输入密码" required>
+                </div>
+                <button type="submit" class="v2-auth-submit-btn">注册并获得30个粒子币</button>
+            </form>
+        </div>
+    </div>
+
+<div class="v2-app flex h-screen w-full bg-white dark:bg-zinc-900">
+
+<!-- 1. 左侧侧边栏 -->
+<aside id="sidebar" class="v2-sidebar w-[340px] p-6 bg-sidebar-yellow dark:bg-sidebar-yellow text-black flex flex-col gap-6 shrink-0 relative transition-all duration-300">
+    
+    <!-- 展开时的 Logo 和标题 -->
+    <div class="flex items-center justify-between v2-sidebar-full-content">
+        <div class="flex items-center gap-3">
+            <div class="flex flex-col">
+                <div class="flex items-center space-x-1">
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                </div>
+                <div class="flex items-center space-x-1 mt-1">
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                    <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                </div>
+            </div>
+            <h1 class="font-bold text-lg tracking-wider v2-sidebar-text">基本粒子</h1>
+        </div>
+    </div>
+    
+    <!-- 折叠时的 Logo 图标 -->
+    <div class="v2-sidebar-icon-content h-10">
+        <div class="flex flex-col">
+            <div class="flex items-center space-x-1">
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+            </div>
+            <div class="flex items-center space-x-1 mt-1">
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 上传区域 -->
+    <div class="space-y-4">
+        <div class="flex justify-between items-center v2-sidebar-full-content">
+            <span class="text-sm font-semibold v2-sidebar-text">上传图片</span>
+            <button id="add-upload-row-btn" class="w-8 h-8 flex items-center justify-center bg-black/5 rounded-lg text-xl hover:bg-black/10 transition-colors">+</button>
+        </div>
+        <!-- (已修改) 正方形 (aspect-square), 新图标 (add_photo_alternate) -->
+        <label for="main-image-upload" class="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-black/20 rounded-xl bg-black/5 v2-pattern-bg cursor-pointer hover:border-black/40 v2-sidebar-full-content" data-slot="main">
+            <span class="material-symbols-outlined text-6xl text-black/30">add_photo_alternate</span>
+        </label>
+        <input id="main-image-upload" type="file" class="sr-only">
+
+        <!-- 折叠时的上传图标 -->
+        <label for="main-image-upload-icon" class="v2-sidebar-icon-content w-12 h-12 bg-black/5 rounded-xl cursor-pointer hover:bg-black/10" data-slot="main">
+            <span class="material-symbols-outlined text-3xl text-black/50">add_photo_alternate</span>
+        </label>
+        <input id="main-image-upload-icon" type="file" class="sr-only">
+
+        <!-- 🔑 修复3: 折叠时显示的缩略图容器 -->
+        <div id="collapsed-thumbnails-container" class="v2-collapsed-thumbnails">
+            <!-- JS动态填充缩略图 -->
+        </div>
+
+        <!-- 动态上传框容器 -->
+        <div id="additional-uploads-container" class="space-y-2 v2-sidebar-full-content">
+            <!-- JS 动态添加上传框 -->
+        </div>
+    </div>
+    
+    <!-- 尺寸区域 -->
+    <div class="space-y-4">
+        <h3 class="text-sm font-semibold v2-sidebar-text v2-sidebar-full-content">尺寸</h3>
+        <div class="relative v2-sidebar-full-content" id="aspect-ratio-wrapper">
+            <!-- 显示当前选择的按钮 -->
+            <button id="current-aspect-ratio-btn" class="flex items-center justify-between w-full bg-white/50 border border-black/10 rounded-xl text-black py-3 px-4 transition-all hover:bg-white/80">
+                <span id="current-aspect-ratio-display" class="flex items-center gap-2">
+                    <span class="w-4 h-4 bg-gray-600 rounded-sm inline-block"></span>
+                    <span class="font-medium v2-sidebar-text">1:1</span>
+                </span>
+                <span class="material-symbols-outlined text-black/40 v2-sidebar-text">expand_more</span>
+            </button>
+            
+            <!-- (已修改) 要求 1: 5个选项, 透明背景 (bg-white/50 backdrop-blur-sm), z-50 -->
+            <div id="aspect-ratio-dropdown" class="hidden absolute z-50 w-full mt-1 bg-white/50 backdrop-blur-sm border border-black/10 rounded-lg shadow-lg">
+                <div id="aspect-ratio-group" class="grid grid-cols-5 gap-1 p-2">
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="true" data-ratio="1:1">
+                        <span class="w-4 h-4 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="false" data-ratio="3:4">
+                        <span class="w-3 h-4 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="false" data-ratio="4:3">
+                        <span class="w-4 h-3 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="false" data-ratio="16:9">
+                        <span class="w-5 h-3 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                    <button class="aspect-ratio-btn flex items-center justify-center bg-transparent border border-transparent p-2 rounded-lg text-sm text-text-light hover:border-black/50 data-[active=true]:bg-black data-[active=true]:border-black" data-active="false" data-ratio="9:16">
+                        <span class="w-3 h-5 bg-gray-500 rounded-sm inline-block data-[active=true]:bg-white"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 折叠时的尺寸图标 -->
+        <button id="aspect-ratio-icon-btn" class="v2-sidebar-icon-content w-12 h-12 bg-black/5 rounded-xl cursor-pointer hover:bg-black/10">
+            <span class="material-symbols-outlined text-3xl text-black/50">aspect_ratio</span>
+        </button>
+    </div>
+
+    <!-- 数量区域 -->
+    <div class="space-y-4">
+        <h3 class="text-sm font-semibold v2-sidebar-text v2-sidebar-full-content">数量</h3>
+        <!-- (已修改) 要求 3: p-3 -> p-2.5 -->
+        <div id="image-count-group" class="grid grid-cols-4 gap-3 v2-sidebar-full-content">
+            <button class="image-count-btn flex items-center justify-center p-2.5 rounded-xl bg-white/50 hover:bg-white/80 transition-colors data-[active=true]:bg-black data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:ring-2 data-[active=true]:ring-black" data-active="true">1</button>
+            <button class="image-count-btn flex items-center justify-center p-2.5 rounded-xl bg-white/50 hover:bg-white/80 transition-colors data-[active=true]:bg-black data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:ring-2 data-[active=true]:ring-black" data-active="false">2</button>
+            <button class="image-count-btn flex items-center justify-center p-2.5 rounded-xl bg-white/50 hover:bg-white/80 transition-colors data-[active=true]:bg-black data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:ring-2 data-[active=true]:ring-black" data-active="false">3</button>
+            <button class="image-count-btn flex items-center justify-center p-2.5 rounded-xl bg-white/50 hover:bg-white/80 transition-colors data-[active=true]:bg-black data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:ring-2 data-[active=true]:ring-black" data-active="false">4</button>
+        </div>
+        
+        <!-- 折叠时的数量图标 -->
+        <button class="v2-sidebar-icon-content w-12 h-12 bg-black/5 rounded-xl cursor-pointer hover:bg-black/10">
+            <span class="material-symbols-outlined text-3xl text-black/50">filter_4</span>
+        </button>
+    </div>
+    
+    <!-- 系列图开关 -->
+    <div class="flex items-center justify-between v2-sidebar-full-content v2-hide-on-collapse">
+        <span class="text-sm font-semibold v2-sidebar-text">开启系列图</span>
+        <button id="series-mode-toggle" aria-checked="false" class="v2-switch-btn relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 bg-black/10" role="switch">
+            <span aria-hidden="true" class="v2-switch-dot pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+        </button>
+    </div>
+
+    <!-- 移除左下角用户区域 -->
+    <div class="mt-auto pt-8 border-t border-black/10 v2-sidebar-full-content v2-hide-on-collapse">
+        <!-- 内容已删除 -->
+    </div>
+    
+    <!-- 折叠按钮 -->
+    <button id="sidebar-toggle-btn" class="absolute top-1/2 -right-3.5 -translate-y-1/2 w-7 h-7 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors z-10">
+        <span id="toggle-icon-left" class="material-symbols-outlined text-lg">chevron_left</span>
+        <span id="toggle-icon-right" class="material-symbols-outlined text-lg hidden">chevron_right</span>
+    </button>
+</aside>
+
+<!-- 2. 主内容区域 -->
+<main class="flex-1 flex flex-col bg-gray-50 dark:bg-zinc-900">
+    <!-- (已修改) 要求 2: 移除下边框, 添加 "视频" 和 "收藏" 图标 -->
+    <header class="flex items-center justify-end p-4 h-16 shrink-0 border-b-0 border-gray-200 dark:border-zinc-800">
+        <div class="flex items-center gap-6">
+            <!-- 新增图标 -->
+            <button class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors">
+                 <span class="material-symbols-outlined text-xl text-gray-600 dark:text-gray-400">movie</span>
+            </button>
+            <button class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors">
+                 <span class="material-symbols-outlined text-xl text-gray-600 dark:text-gray-400">favorite</span>
+            </button>
+            
+            <div class="flex items-center gap-2" title="粒子币余额">
+                <span class="material-symbols-outlined text-yellow-400 text-xl !fill-1">monetization_on</span>
+                <span class="text-sm font-semibold" data-role="credits-display">-- Credits</span>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-sm font-bold text-gray-600 dark:text-gray-300" data-role="user-avatar" title="未登录">?</div>
+        </div>
+    </header>
+    
+    <!-- 内容区 -->
+    <div class="flex-1 overflow-y-auto p-8 relative">
+        <div id="results-container" class="space-y-8 w-full px-4">
+            <!-- JS 动态生成结果 -->
+            <div class="text-center text-gray-400 pt-16">
+                <span class="material-symbols-outlined text-6xl">auto_awesome</span>
+                <p class="mt-4 text-lg">开始您的第一次创作吧</p>
+                <p class="text-sm">在底部的输入框输入提示词，点击箭头即可生成。</p>
+            </div>
+        </div>
+        
+        <!-- 底部输入框区域 (动态高度) -->
+        <div class="sticky bottom-0 mt-8 -mx-8 px-8 py-4 bg-gradient-to-t from-gray-50/80 dark:from-zinc-900/80 to-transparent backdrop-blur-sm">
+            <div id="prompt-wrapper" class="relative max-w-4xl mx-auto transition-all duration-300">
+                <!-- 输入框改为textarea支持多行 -->
+                <textarea id="prompt-input" rows="1" class="w-full pl-6 pr-56 py-4 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-xl text-base placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-yellow-400 focus:outline-none resize-none overflow-hidden" placeholder="输入提示词..."></textarea>
+
+                <div class="absolute right-3 flex items-center gap-1.5">
+                    <!-- 按钮固定在右上角 -->
+                    <button class="w-10 h-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                        <span class="material-symbols-outlined text-xl">mic</span>
+                    </button>
+                    <button class="w-10 h-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                        <span class="material-symbols-outlined text-xl">image</span>
+                    </button>
+                    <button class="w-10 h-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                        <span class="material-symbols-outlined text-xl">settings</span>
+                    </button>
+                    
+                    <!-- "AI优化" 按钮 -->
+                    <button class="flex items-center gap-2 px-4 py-2.5 rounded-full bg-yellow-400 text-black text-sm font-semibold hover:bg-yellow-500 transition-colors">
+                        <span class="material-symbols-outlined text-lg">auto_awesome</span>
+                        AI优化
+                    </button>
+                    <!-- 发送按钮 (rounded-full) -->
+                    <button id="generate-btn-bottom" class="w-11 h-11 flex items-center justify-center bg-gray-800 dark:bg-gray-200 text-white dark:text-black rounded-full hover:bg-black dark:hover:bg-white transition-colors">
+                        <span class="material-symbols-outlined text-2xl">arrow_upward</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 图片查看器 -->
+<div id="image-viewer" class="v2-app v2-viewer-overlay" style="display: none;">
+    <div class="v2-viewer-container">
+        <img id="viewer-image" class="v2-viewer-image" src="" alt="预览图">
+
+        <!-- Loading 指示器 -->
+        <div class="v2-viewer-loading" style="display: none;">
+            <div class="v2-viewer-loading-spinner"></div>
+            <div class="v2-viewer-loading-text">加载原图中...</div>
+        </div>
+
+        <div class="v2-viewer-controls">
+            <button class="v2-viewer-btn" onclick="closeImageViewer()" title="关闭 (ESC)">
+                <span class="material-symbols-outlined text-white">close</span>
+            </button>
+            <button class="v2-viewer-btn" onclick="downloadViewerImage()" title="下载">
+                <span class="material-symbols-outlined text-white">download</span>
+            </button>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- 完整的 JS 逻辑 -->
+<script>
+    // 等待字体加载完成后再显示页面，防止FOUC
+    if (document.fonts) {
+        document.fonts.ready.then(() => {
+            document.body.classList.add('loaded');
+        });
+    } else {
+        // 降级：300ms后显示
+        setTimeout(() => {
+            document.body.classList.add('loaded');
+        }, 300);
+    }
+
+</script>
+
+</body></html>
