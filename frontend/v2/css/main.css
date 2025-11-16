@@ -76,65 +76,161 @@ html.dark .v2-app .v2-pattern-bg {
 }
 
 /* ============================================
-   Toast提示系统
+   Toast提示系统（优雅版）
    ============================================ */
 
 .v2-app .v2-toast {
     position: fixed;
     top: 20px;
     right: 20px;
-    padding: 12px 24px;
+    padding: 14px 20px;
     border-radius: 12px;
-    background: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: v2-slideIn 0.3s ease-out;
+    background: rgba(255, 217, 0, 0.85); /* 🎨 降低透明度至85%，更柔和 */
+    backdrop-filter: blur(12px) saturate(180%); /* 🎨 增强毛玻璃效果 */
+    box-shadow:
+        0 4px 12px rgba(255, 217, 0, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.3); /* 🎨 内阴影，增加质感 */
     z-index: 9999;
     display: flex;
     align-items: center;
-    gap: 12px;
-    max-width: 400px;
+    gap: 10px;
+    max-width: 380px;
+    color: #000;
+    font-weight: 500;
+    font-size: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08); /* 细边框 */
+    /* 🎨 移除这里的animation，改为JS控制 */
 }
 
 .v2-app .v2-toast.success {
-    border-left: 4px solid #10b981;
-    background: #f0fdf4;
+    background: rgba(16, 185, 129, 0.85);
+    backdrop-filter: blur(12px) saturate(180%);
+    box-shadow:
+        0 4px 12px rgba(16, 185, 129, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .v2-app .v2-toast.warning {
-    border-left: 4px solid #f59e0b;
-    background: #fffbeb;
+    background: rgba(251, 191, 36, 0.85);
+    backdrop-filter: blur(12px) saturate(180%);
+    box-shadow:
+        0 4px 12px rgba(251, 191, 36, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    color: #000;
+    border-color: rgba(0, 0, 0, 0.08);
 }
 
 .v2-app .v2-toast.error {
-    border-left: 4px solid #ef4444;
-    background: #fef2f2;
+    background: rgba(239, 68, 68, 0.85);
+    backdrop-filter: blur(12px) saturate(180%);
+    box-shadow:
+        0 4px 12px rgba(239, 68, 68, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .v2-app .v2-toast.info {
-    border-left: 4px solid #3b82f6;
-    background: #eff6ff;
+    background: rgba(255, 217, 0, 0.85);
+    backdrop-filter: blur(12px) saturate(180%);
+    box-shadow:
+        0 4px 12px rgba(255, 217, 0, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    color: #000;
+    border-color: rgba(0, 0, 0, 0.08);
 }
 
-@keyframes v2-slideIn {
-    from {
-        transform: translateX(400px);
+/* 🎨 柔和的滑入动画（无弹性，自然流畅） */
+@keyframes v2-toast-slideIn {
+    0% {
+        transform: translateX(100%) translateY(-10px);
         opacity: 0;
     }
-    to {
-        transform: translateX(0);
+    100% {
+        transform: translateX(0) translateY(0);
         opacity: 1;
     }
 }
 
-@keyframes v2-slideOut {
-    from {
-        transform: translateX(0);
+/* 🎨 柔和的滑出动画 */
+@keyframes v2-toast-slideOut {
+    0% {
+        transform: translateX(0) translateY(0);
         opacity: 1;
     }
-    to {
-        transform: translateX(400px);
+    100% {
+        transform: translateX(100%) translateY(-10px);
         opacity: 0;
     }
+}
+
+/* ============================================
+   图片加载渐现效果
+   ============================================ */
+
+/* 图片加载占位符 */
+.v2-app .v2-image-loading {
+    background: linear-gradient(
+        90deg,
+        rgba(200, 200, 200, 0.1) 0%,
+        rgba(200, 200, 200, 0.2) 50%,
+        rgba(200, 200, 200, 0.1) 100%
+    );
+    background-size: 200% 100%;
+    animation: v2-shimmer 1.5s ease-in-out infinite;
+}
+
+html.dark .v2-app .v2-image-loading {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 0%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.03) 100%
+    );
+    background-size: 200% 100%;
+}
+
+@keyframes v2-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* 图片渐现效果 */
+.v2-app .v2-image-fade-in {
+    animation: v2-fadeIn 0.5s ease-out;
+}
+
+@keyframes v2-fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* 图片初始隐藏状态 */
+.v2-app img[data-fade-in] {
+    opacity: 0;
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.v2-app img[data-fade-in].loaded {
+    opacity: 1;
+    transform: scale(1);
 }
 
 /* ============================================

@@ -4,14 +4,15 @@
  * @version 20251114021
  */
 
-import { authService, imageService, historyService } from './api/index.js?v=20251114021';
-import toast from './utils/toast.js?v=20251114021';
-import confirmDialog from './utils/confirm.js?v=20251114021';
-import HistoryRenderer from './modules/HistoryRenderer.js?v=20251114021';
-import ImageViewer from './modules/ImageViewer.js?v=20251114021';
-import AuthUI from './modules/AuthUI.js?v=20251114021';
-import UploadManager from './modules/UploadManager.js?v=20251114021';
-import GeneratorUI from './modules/GeneratorUI.js?v=20251114021';
+import { authService, imageService, historyService } from './api/index.js?v=20251115006';
+import toast from './utils/toast.js?v=20251115006';
+import confirmDialog from './utils/confirm.js?v=20251115006';
+import HistoryRenderer from './modules/HistoryRenderer.js?v=20251115006';
+import ImageViewer from './modules/ImageViewer.js?v=20251115006';
+import AuthUI from './modules/AuthUI.js?v=20251115006';
+import UploadManager from './modules/UploadManager.js?v=20251115006';
+import GeneratorUI from './modules/GeneratorUI.js?v=20251115006';
+import { initLegacyFeatures } from './legacy.js?v=20251115004';
 
 // 全局状态管理
 window.V2App = {
@@ -36,6 +37,9 @@ window.V2App = {
      */
     async init() {
         console.log('🚀 AIIMAGE V2 应用初始化...');
+
+        // 🔑 加载Legacy功能模块（包含上传、生成、侧边栏等功能）
+        initLegacyFeatures();
 
         // 初始化UI模块（只初始化无冲突的模块）
         this.historyRenderer = new HistoryRenderer(historyService);

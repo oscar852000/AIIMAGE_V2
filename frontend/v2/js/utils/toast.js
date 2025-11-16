@@ -15,6 +15,7 @@ class Toast {
         if (!this.container) {
             this.container = document.createElement('div');
             this.container.id = 'v2-toast-container';
+            this.container.className = 'v2-app'; // 🔑 添加v2-app类，应用样式作用域
             // 🔑 修复：增加top偏移，避免与用户信息区域重叠
             this.container.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999;';
             document.body.appendChild(this.container);
@@ -53,8 +54,8 @@ class Toast {
         toast.className = `v2-toast ${type}`;
         toast.style.cssText = `
             opacity: 0;
-            transform: translateX(400px);
-            transition: all 0.3s ease-out;
+            transform: translateX(100%) translateY(-10px);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             margin-bottom: 12px;
         `;
 
@@ -69,7 +70,7 @@ class Toast {
         toast.innerHTML = `
             <span class="material-symbols-outlined" style="font-size: 20px;">${icons[type]}</span>
             <span style="flex: 1;">${message}</span>
-            <button class="v2-toast-close" style="background: none; border: none; cursor: pointer; padding: 0; color: inherit; opacity: 0.5;">
+            <button class="v2-toast-close" style="background: none; border: none; cursor: pointer; padding: 0; color: inherit; opacity: 0.6; transition: opacity 0.2s ease;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
             </button>
         `;
@@ -79,6 +80,15 @@ class Toast {
             this.hide(id);
         });
 
+        // 悬停关闭按钮时加深不透明度
+        const closeBtn = toast.querySelector('.v2-toast-close');
+        closeBtn.addEventListener('mouseenter', () => {
+            closeBtn.style.opacity = '1';
+        });
+        closeBtn.addEventListener('mouseleave', () => {
+            closeBtn.style.opacity = '0.6';
+        });
+
         return toast;
     }
 
@@ -86,16 +96,16 @@ class Toast {
         const toast = this.toasts.get(id);
         if (!toast) return;
 
-        // 淡出动画
+        // 🎨 柔和的淡出动画
         toast.style.opacity = '0';
-        toast.style.transform = 'translateX(400px)';
+        toast.style.transform = 'translateX(100%) translateY(-10px)';
 
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
             }
             this.toasts.delete(id);
-        }, 300);
+        }, 400); // 🎨 匹配新的动画时长
     }
 
     // 便捷方法

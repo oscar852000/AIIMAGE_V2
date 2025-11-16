@@ -311,6 +311,19 @@ export class HistoryRenderer {
         img.alt = `生成的图片 ${index + 1}`;
         img.className = 'w-full h-full object-cover';
 
+        // 🎨 添加渐现效果
+        img.style.opacity = '0';
+        img.style.transform = 'scale(0.98)';
+        img.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+
+        // 图片加载完成后淡入
+        img.onload = function() {
+            setTimeout(() => {
+                img.style.opacity = '1';
+                img.style.transform = 'scale(1)';
+            }, 10);
+        };
+
         const overlay = DOM.create('div',
             'absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100',
             `
